@@ -2682,3 +2682,39 @@ fn test_owner_force_add_bypasses_cap() {
     assert!(enrollees.contains(&e1));
     assert!(enrollees.contains(&e2));
 }
+
+#[test]
+fn test_owner_can_suspend_and_resume_with_notice() {
+    let (env, client, owner, token) = setup();
+    let quest_id = create_quest_helper(&env, &client, &owner, &token);
+    let reason = String::from_str(&env, "security investigation");
+
+    client.suspend_quest(&quest_id, &owner, &reason);
+    let suspended = client.get_quest(&quest_id);
+    assert_eq!(suspended.status, QuestStatus::Suspended);
+    assert_eq!(
+        client.get_suspension(&quest_id).unwrap().unwrap().reason,
+        reason
+    );
+
+    client.resume_quest(&quest_id, &owner);
+    assert_eq!(client.get_quest(&quest_id).status, QuestStatus::Active);
+}
+
+#[test]
+fn test_suspended_quest_rejects_enrollment_and_unauthorized_operator() {
+    let (env, client, owner, token) = setup();
+    let quest_id = create_quest_helper(&env, &client, &owner, &token);
+    let stranger = Address::generate(&env);
+    let reason = String::from_str(&env, "incident");
+
+    assert_eq!(
+        client.try_suspend_quest(&quest_id, &stranger, &reason),
+        Err(Ok(Error::Unauthorized))
+    );
+    client.suspend_quest(&quest_id, &owner, &reason);
+    assert_eq!(
+        client.try_join_quest(&stranger, &quest_id),
+        Err(Ok(Error::QuestSuspended))
+    );
+}

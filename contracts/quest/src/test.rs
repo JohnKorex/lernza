@@ -2693,7 +2693,7 @@ fn test_owner_can_suspend_and_resume_with_notice() {
     let suspended = client.get_quest(&quest_id);
     assert_eq!(suspended.status, QuestStatus::Suspended);
     assert_eq!(
-        client.get_suspension(&quest_id).unwrap().unwrap().reason,
+        client.get_suspension(&quest_id).unwrap().reason,
         reason
     );
 
